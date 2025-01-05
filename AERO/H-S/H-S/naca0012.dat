@@ -1,0 +1,7 @@
+NACA 0012
+OPER
+Visc 100000.0
+Alfa 2.0
+Pacc
+File xfoil_output.txt
+Quit

@@ -1,0 +1,108 @@
+clc
+clear all 
+close
+
+% Definizione dei parametri geometrici dell'ala del Cessna 172 e di un altro aereo
+% Parametri dell'ala del Cessna 172
+b_cessna = 11.03; % apertura alare in metri
+c_cessna = 1.2;   % corda media in metri
+S_cessna = 16.2;  % superficie alare in m^2
+
+% Parametri dell'ala di un altro aereo (esempio: Piper Cub)
+b_piper = 8.5;   % apertura alare in metri
+c_piper = 1.1;   % corda media in metri
+S_piper = 11.9;  % superficie alare in m^2
+
+% Parametri generali
+alpha_range = -5:1:15; % intervallo di angoli di attacco in gradi
+alpha = deg2rad(alpha_range); % angoli di attacco in radianti
+
+% Calcolare la distribuzione della portanza usando il metodo di Weissenger
+% Funzione che implementa il metodo di Weissenger per una distribuzione arbitraria di portanza
+function [gamma, cl_alpha] = weissenger_method(b, c, S, alpha_range)
+    % Numero di segmenti
+    n = 50; 
+    dx = b / n; % Passo in x
+    x = linspace(-b/2, b/2, n); % Coordinate sui segmenti
+    cl_alpha = 2 * pi * b / S; % Pendenza della curva C_L / alpha
+
+    % Calcolo della circolazione su ciascun segmento (approssimazione di Weissenger)
+    gamma = zeros(1, n);
+    
+    % Per ogni angolo di attacco in alpha_range
+    for j = 1:length(alpha_range)
+        % Calcolo della circolazione per l'angolo di attacco j
+        for i = 1:n
+            gamma(i) = cl_alpha * alpha_range(j) * dx; % Dipende dall'angolo alpha
+        end
+    end
+end
+
+% Calcolo della distribuzione della portanza per il Cessna 172
+[gamma_cessna, cl_alpha_cessna] = weissenger_method(b_cessna, c_cessna, S_cessna, alpha);
+
+% Calcolo della distribuzione della portanza per l'aereo Piper Cub
+[gamma_piper, cl_alpha_piper] = weissenger_method(b_piper, c_piper, S_piper, alpha);
+
+% Comparazione della distribuzione della circolazione e della pendenza di C_L/alpha
+figure;
+subplot(2,1,1);
+plot(alpha_range, gamma_cessna, 'b', alpha_range, gamma_piper, 'r');
+xlabel('Angolo di attacco (°)');
+ylabel('Circolazione (Gamma)');
+legend('Cessna 172', 'Piper Cub');
+title('Distribuzione della Circolazione');
+
+subplot(2,1,2);
+plot(alpha_range, cl_alpha_cessna*ones(size(alpha_range)), 'b', alpha_range, cl_alpha_piper*ones(size(alpha_range)), 'r');
+xlabel('Angolo di attacco (°)');
+ylabel('C_L/\alpha');
+legend('Cessna 172', 'Piper Cub');
+title('Pendenza della Curva C_L/\alpha');
+
+% Calcolare le polari per C_L e C_D
+function [cl, cd] = calculate_polars(gamma, b, c)
+    % Calcolo di C_L e C_D
+    cl = 2 * pi * gamma / (b * c); % Coefficiente di portanza
+    cd = 0.02 + 0.1 * (cl).^2; % Coefficiente di resistenza indotto (approssimato)
+end
+
+% Calcolare le polari per il Cessna 172
+[cl_cessna, cd_cessna] = calculate_polars(gamma_cessna, b_cessna, c_cessna);
+
+% Calcolare le polari per il Piper Cub
+[cl_piper, cd_piper] = calculate_polars(gamma_piper, b_piper, c_piper);
+
+% Tracciare le polari
+figure;
+plot(cd_cessna, cl_cessna, 'b', cd_piper, cl_piper, 'r');
+xlabel('C_D');
+ylabel('C_L');
+legend('Cessna 172', 'Piper Cub');
+title('Polari C_L vs C_D');
+
+% Aggiungere l'effetto dei piani di coda (approssimazione semplificata)
+function [cl_tail, cd_tail] = tail_effects(S_tail, S, cl, cd)
+    % Effetto dei piani di coda sull'aerodinamica (approccio semplificato)
+    AR_tail = 6; % Aspetto del piano di coda (approssimato)
+    cl_tail = cl * (1 - S_tail / S); % Effetto sulla portanza
+    cd_tail = cd * (1 + S_tail / S); % Effetto sulla resistenza
+end
+
+% Parametri dei piani di coda per il Cessna 172
+S_tail_cessna = 2.5; % superficie del piano di coda in m^2
+
+% Parametri dei piani di coda per il Piper Cub
+S_tail_piper = 1.8; % superficie del piano di coda in m^2
+
+% Calcolare gli effetti dei piani di coda
+[cl_tail_cessna, cd_tail_cessna] = tail_effects(S_tail_cessna, S_cessna, cl_cessna, cd_cessna);
+[cl_tail_piper, cd_tail_piper] = tail_effects(S_tail_piper, S_piper, cl_piper, cd_piper);
+
+% Tracciare l'effetto dei piani di coda sulle polari
+figure;
+plot(cd_tail_cessna, cl_tail_cessna, 'b', cd_tail_piper, cl_tail_piper, 'r');
+xlabel('C_D');
+ylabel('C_L');
+legend('Cessna 172 (con piano di coda)', 'Piper Cub (con piano di coda)');
+title('Polari C_L vs C_D con effetti del piano di coda');

@@ -1,0 +1,6 @@
+NACA 0012
+Visc 500000.0
+Alfa 2.0
+Pacc
+File cl_cm_output.txt
+Quit
